@@ -1,0 +1,18 @@
+# Compiled binaries
+*.exe
+*.out
+a.out
+
+# Object / intermediate files
+*.o
+*.obj
+
+# Debug info
+*.pdb
+*.ilk
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
