@@ -1,9 +1,18 @@
 #include <windows.h>
 #include <stdio.h>
 #include <conio.h>
+#include <stdlib.h>
+#include <time.h>
 
 #define ROWS 8
 #define COLS 18
+
+typedef struct {
+  int r;
+  int c;
+} Cell;
+
+#define MAX_LEN (ROWS * COLS)
 
 int main(void) {
 
@@ -43,11 +52,21 @@ int main(void) {
     }
   }
 
+  // 변수 선언 & 할당
   int player_r = ROWS / 2;
   int player_c = COLS / 2;
   int prev_r = player_r;
   int prev_c = player_c;
   
+  // 기존 변수 교체
+  Cell *body = malloc(sizeof(Cell) * MAX_LEN);
+  int length = 1;
+
+  body[0].r = ROWS / 2;
+  body[0].c = COLS / 2;
+
+  Cell prev_tail = body[0];
+
   while (1) {
     // 화면 전체 지우기
     // printf("\033[2J\033[H");
@@ -60,7 +79,12 @@ int main(void) {
     // int prev_r = player_r;
     // int prev_c = player_c;
     board[prev_r][prev_c] = '.';
-    
+
+    // 차분 렌더링 유지
+    board[prev_tail.r][prev_tail.c] = '.';
+    board[body[0].r][body[0].c] = 'O';
+    //
+
     // 정가운데. 출력 루프 돌기 전
     board[player_r][player_c] = 'O';
 
@@ -109,17 +133,37 @@ int main(void) {
     //   // 아무것도 안 함 -> 그냥 버림
     // }
 
+    // 바뀌기 직전에 세이브
     prev_r = player_r;
     prev_c = player_c;
-    // 매 프레임 전진
+
+    // 이동 - 매 프레임 전진
     player_r += dr;
     player_c += dc;
+
+    // 이동 업데이트
+    prev_tail = body[length - 1];
+
+    for (int i = length - 1; i > 0; i--) {
+      body[i] = body[i - 1];
+    }
+
+    body[0].r += dr;
+    body[0].c += dc;
+    //
 
     // 벽 clamp (switch보다 뒤에 와야 함)
     if (player_r < 1) player_r = 1;
     if (player_r > ROWS - 2) player_r = ROWS - 2;
     if (player_c < 1) player_c = 1;
     if (player_c > COLS - 2) player_c = COLS - 2;
+
+    // clamp 업데이트
+    if (body[0].r < 1 ) body[0].r = 1;
+    if (body[0].r > ROWS - 2) body[0].r = ROWS - 2;
+    if (body[0].c < 1) body[0].c = 1;
+    if (body[0].c > COLS - 2) body[0].c = COLS - 2;
+    //
 
     // test
     printf("pos: %d, %d\n", player_r, player_c);
@@ -128,6 +172,8 @@ int main(void) {
     Sleep(200);
   }
   
+  // 해제
+  free(body);
 
   return 0;
 }
