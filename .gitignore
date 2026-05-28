@@ -16,3 +16,6 @@ a.out
 .idea/
 .DS_Store
 Thumbs.db
+
+# 테스트용
+*.log
