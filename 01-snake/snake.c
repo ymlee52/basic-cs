@@ -21,6 +21,8 @@ int main(void) {
 
   printf("Hello, snake!\n");
 
+  srand(time(NULL));
+
   // board 정의
   char board[ROWS][COLS];
   
@@ -44,12 +46,23 @@ int main(void) {
 
   Cell prev_tail = body[0];
 
-  int running = 1;
+  Cell apple;
+  apple.r = 1 + rand() % (ROWS - 2);
+  apple.c = 1 + rand() % (COLS - 2);
 
+  int running = 1;
+  
+  printf("\033[?1049h"); // 대체 화면 진입
+  
   while (running) {
+    // printf("\033[H"); // 화면(터미널) 절대 좌상단(1, 1)으로 커서 이동
     printf("\033[H");
 
+    // 차분 렌더링
     board[prev_tail.r][prev_tail.c] = '.';
+    // 사과 먼저 박고
+    board[apple.r][apple.c] = '*';
+    // 그 다음 머리
     board[body[0].r][body[0].c] = 'O';
 
     for (int r = 0; r < ROWS; r++) {
@@ -92,6 +105,8 @@ int main(void) {
     Sleep(200);
   }
   free(body);
+
+  printf("\033[?1049l");
 
   return 0;
 }
