@@ -97,30 +97,25 @@ RAM에 박힘 (안 보임)     화면에 뜸 (보임)
 
 `01-snake/snake.c`를 다음으로 채운다. (Stage 0의 5줄짜리는 통째로 덮어쓴다.)
 
-**Stage 0 → Stage 1 변경점**
-- **추가**: `#define ROWS 6`, `#define COLS 18` — 보드 크기 매크로 상수.
-- **수정**: `printf("Hello, snake!");` → `printf("Hello, snake!\n");` — 끝에 줄바꿈 붙임 (다음 줄부터 보드가 깔끔하게 시작되도록).
-- **추가**: `char board[ROWS][COLS];` — 2차원 보드 배열 선언.
-- **추가**: 이중 `for` 루프 — 행/열을 돌며 테두리는 `'#'`, 안쪽은 `'.'`을 `board`에 박고 동시에 `putchar`로 출력. 안쪽 for 밖에서 `putchar('\n')`으로 줄바꿈.
-- **유지**: `#include <stdio.h>`, `int main(void)`, `return 0;` — 뼈대는 그대로.
-
 ```c
 #include <stdio.h>
 
-// 매크로 상수: 전처리기가 컴파일 전에 "글자 치환"으로 박아넣음.
+// (추가) 매크로 상수: 전처리기가 컴파일 전에 "글자 치환"으로 박아넣음.
 // 변수가 아니라 그냥 이름표라, 메모리도 안 먹고 런타임에 바꿀 수도 없다.
 // 보드 크기처럼 "컴파일 시점에 알아야 하는 값"에 적합.
 #define ROWS 6
 #define COLS 18
 
 int main(void) {
+  // (수정) 끝에 \n 붙임 — 다음 줄부터 보드가 깔끔하게 시작되도록.
   // printf("Hello, snake!");
   printf("Hello, snake!\n");
 
-  // 2차원 char 배열. 메모리에는 ROWS*COLS 바이트가 일렬로 잡힌다.
+  // (추가) 2차원 char 배열. 메모리에는 ROWS*COLS 바이트가 일렬로 잡힌다.
   // 선언만으로는 내용물은 "쓰레기 값" — 뒤에서 직접 채워야 의미가 생긴다.
   char board[ROWS][COLS];
 
+  // (추가) 이중 for로 테두리는 '#', 안쪽은 '.'을 board에 박으면서 동시에 putchar로 출력.
   // 바깥 루프: 행(r) 0 ~ ROWS-1
   for (int r = 0; r < ROWS; r++) {
     // 안쪽 루프: 열(c) 0 ~ COLS-1

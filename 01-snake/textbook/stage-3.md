@@ -167,26 +167,12 @@ while (1) {
 
 `01-snake/snake.c`를 다음으로 덮어쓴다.
 
-**Stage 2 → Stage 3 변경점**
-- **추가**: `#include <conio.h>` — Windows 논블로킹 입력 함수.
-- **수정**: `#define ROWS 6` → `8` — 자동 전진 관찰하기 좋게 보드 키움.
-- **삭제**: 첫 보드 그리기 이중 for 안의 `putchar(board[r][c])`(if/else 각 1줄)와 바깥 for의 `putchar('\n')`. 출력은 메인 루프에서 한 번에.
-- **추가**: `int dr = 0, dc = 1;` 방향 벡터, `int prev_r/prev_c` 직전 좌표(차분 렌더링용).
-- **수정**: 메인 루프의 화면 지우기 `printf("\033[2J\033[H");` → `printf("\033[H");` — 매 프레임 전체 지우기 제거(깜빡임/비효율).
-- **삭제**: 메인 루프 안에서 매 프레임 보드를 통째 재칠하던 이중 for. 대신 차분 렌더링 두 줄(`board[prev_r][prev_c]='.';` + `board[player_r][player_c]='O';`)로.
-- **삭제**: `getchar()` + 잔여 비우기 루프. 대신 `if (_kbhit()) { _getch(); ... }` 논블로킹.
-- **수정**: switch 본문 — 좌표 직접 변경(`player_r--` 등) → 방향 벡터 변경(`dr=-1, dc=0` 등). `case 'q': return 0;`만 동일.
-- **추가**: 루프 끝에 `prev_r = player_r; ... player_r += dr; ...` — 한 칸 전진 + prev 스냅샷.
-- **추가**: `printf("pos: %d, %d\n", ...);` — 디버그 출력(익숙해지면 삭제).
-- **추가**: `Sleep(200);` — 프레임 간격(약 5 FPS).
-- **유지**: clamp 블록, 도움말 `printf`, `main` 시그니처/`return 0`.
-
 ```c
 #include <windows.h>   // Sleep, SetConsoleOutputCP
 #include <stdio.h>     // printf, putchar
-#include <conio.h>     // _kbhit, _getch — Windows 전용 논블로킹 입력
+#include <conio.h>     // (추가) _kbhit, _getch — Windows 전용 논블로킹 입력
 
-// 보드 크기. ROWS를 좀 키웠다 — 자동 전진을 관찰하기 좋게.
+// (수정) 보드 크기. ROWS 6 → 8 — 자동 전진을 관찰하기 좋게.
 // #define ROWS 6
 #define ROWS 8
 #define COLS 18
@@ -198,12 +184,12 @@ int main(void) {
 
   char board[ROWS][COLS];
 
-  // 방향 벡터 — 매 프레임 (player_r, player_c)에 더해진다.
+  // (추가) 방향 벡터 — 매 프레임 (player_r, player_c)에 더해진다.
   // 기본 (0, 1) = "오른쪽으로 한 칸씩". 키 입력은 이 두 값만 바꾼다.
   int dr = 0, dc = 1;
 
   // 보드 초기화는 "루프 진입 전 단 한 번". 차분 렌더링이라 매 프레임 다시 안 칠해도 된다.
-  // (Stage 2와 큰 차이점 — 거기선 매 프레임 다시 칠했다.)
+  // (삭제) Stage 2에선 안쪽 putchar(board[r][c]) 2줄과 바깥 putchar('\n') 1줄로 동시에 출력했음. 출력은 이제 메인 루프에서.
   for (int r = 0; r < ROWS; r++) {
     for (int c = 0; c < COLS; c++) {
       if (r == 0 || r == ROWS - 1 || c == 0 || c == COLS - 1) {
@@ -217,25 +203,26 @@ int main(void) {
     // putchar('\n');
   }
 
-  // 플레이어 좌표. 그리고 직전 프레임 좌표(prev_r/c) — 차분 렌더링에 필요.
-  // ★ 반드시 루프 "밖"에서 선언. 안에서 선언하면 매 반복마다 새로 생겨 직전 값을 잃는다.
+  // 플레이어 좌표.
   int player_r = ROWS / 2;
   int player_c = COLS / 2;
+  // (추가) 직전 프레임 좌표 — 차분 렌더링에 필요.
+  // ★ 반드시 루프 "밖"에서 선언. 안에서 선언하면 매 반복마다 새로 생겨 직전 값을 잃는다.
   int prev_r = player_r;
   int prev_c = player_c;
 
   while (1) {
+    // (수정) 매 프레임 커서만 홈으로. \033[2J(전체 지우기)는 제거 — 깜빡임 + 비효율.
     // printf("\033[2J\033[H");
-    // 매 프레임 커서만 홈 위치로. 화면은 안 지운다.
-    // \033[2J(전체 지우기)는 안 씀 — 깜빡임 + 비효율.
     printf("\033[H");
 
-    // === 차분 렌더링: 바뀐 칸만 갱신 ===
+    // (추가) === 차분 렌더링: 바뀐 칸만 갱신 ===
     // 직전 머리 자리를 '.'으로 되돌리고, 현재 머리 자리에 'O'를 찍는다.
     // 이 두 줄이 "Dirty Rect" 그 자체.
     board[prev_r][prev_c] = '.';
     board[player_r][player_c] = 'O';
 
+    // (삭제) Stage 2의 매 프레임 보드 재칠하기 이중 for. 차분 렌더링(위 두 줄)이 대체.
     // for (int r = 0; r < ROWS; r++) {
     //   for (int c = 0; c < COLS; c++) {
     //     if (r == 0 || r == ROWS - 1 || c == 0 || c == COLS - 1) {
@@ -259,14 +246,15 @@ int main(void) {
 
     printf("이동: wasd, 종료: q\n");
 
+    // (수정) Stage 2의 블로킹 getchar() + 잔여 비우기 루프 → 논블로킹 _kbhit/_getch.
+    // getchar처럼 Enter를 기다리지 않으므로 루프가 멈추지 않는다.
     // int key = getchar();
     // int c;
     // while ((c = getchar()) != '\n' && c != EOF) {
     // }
-    // 논블로킹 입력 — 키가 눌렸을 때만(_kbhit) 읽는다(_getch).
-    // getchar처럼 Enter를 기다리지 않으므로 루프가 멈추지 않는다.
     if (_kbhit()) {
       int key = _getch();
+      // (수정) Stage 2: 좌표 직접 변경(player_r--/++ 등) → 방향 벡터만 변경.
       switch (key) {
         // case 'w': player_r--; break;
         case 'w': dr = -1, dc =  0; break;   // 위
@@ -280,7 +268,7 @@ int main(void) {
       }
     }
 
-    // === 상태 갱신: 이동 직전에 prev를 스냅샷, 그 뒤에 이동 ===
+    // (추가) === 상태 갱신: 이동 직전에 prev 스냅샷, 그 뒤에 이동 ===
     // 순서가 핵심. "현재 위치를 기억" → "한 칸 전진" → 다음 프레임에서 prev로 지움.
     prev_r = player_r;
     prev_c = player_c;
@@ -293,11 +281,10 @@ int main(void) {
     if (player_c < 1)        player_c = 1;
     if (player_c > COLS - 2) player_c = COLS - 2;
 
-    // 디버그용. 좌표 확인용으로 보드 아래에 한 줄 더 찍는다.
-    // 익숙해지면 지워도 됨.
+    // (추가) 디버그용. 좌표 확인용으로 보드 아래에 한 줄 더 찍는다. 익숙해지면 지워도 됨.
     printf("pos: %d, %d\n", player_r, player_c);
 
-    // 프레임 간격. 200ms = 약 5 FPS. 천천히 보면서 동작 확인용.
+    // (추가) 프레임 간격. 200ms = 약 5 FPS. 천천히 보면서 동작 확인용.
     Sleep(200);
   }
 

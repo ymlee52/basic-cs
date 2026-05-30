@@ -218,41 +218,24 @@ return 0;
 
 `01-snake/snake.c`를 다음으로 덮어쓴다. (Stage 3 코드를 잔재 없이 갈아엎는다.)
 
-**Stage 3 → Stage 4 변경점**
-- **추가**: `#include <stdlib.h>` (malloc/free), `#include <time.h>` (다음 단계 srand용, 이번 단계엔 안 씀).
-- **추가**: `typedef struct { int r; int c; } Cell;` — 좌표 한 덩어리 구조체.
-- **추가**: `#define MAX_LEN (ROWS * COLS)` — 뱀 최대 길이.
-- **삭제**: `printf("Hello, snake!\n");` — 본격 게임이 되며 인사말 제거.
-- **삭제**: `int player_r/c`, `int prev_r/c` — 좌표 변수 4개. Cell + body 배열로 대체.
-- **추가**: `Cell *body = malloc(sizeof(Cell) * MAX_LEN);`, `int length = 1;`, `body[0].r/c = ...;`, `Cell prev_tail = body[0];`, `int running = 1;`.
-- **수정**: `while (1)` → `while (running)` — 깃발 패턴으로 종료 후 free 보장.
-- **수정**: 차분 렌더링 두 줄의 인덱싱 — `board[prev_r][prev_c]` → `board[prev_tail.r][prev_tail.c]`, `board[player_r][player_c]` → `board[body[0].r][body[0].c]`.
-- **수정**: `case 'q': return 0;` → `case 'q': running = 0; break;` — return 대신 깃발만 내림.
-- **삭제**: 루프 끝 `prev_r = player_r; prev_c = player_c; player_r += dr; player_c += dc;` 4줄.
-- **추가**: 큐 패턴 — `prev_tail = body[length-1];`, shift 루프(`body[i] = body[i-1]`), `body[0].r/c += dr/dc;`.
-- **수정**: clamp 4줄 인덱스 `player_r/c` → `body[0].r/c`.
-- **삭제**: `printf("pos: %d, %d\n", player_r, player_c);` 디버그 출력.
-- **추가**: `free(body);` 루프 빠진 뒤.
-- **유지**: include 3개(windows/stdio/conio), ROWS/COLS 매크로, `SetConsoleOutputCP`, `char board[ROWS][COLS]`, `int dr = 0, dc = 1;`, 첫 보드 그리기 이중 for, 메인 루프 안 화면 지우기/출력 for/도움말, `if (_kbhit())` 블록 구조와 wasd case들, `Sleep(200);`, `return 0;`.
-
 ```c
 #include <windows.h>   // Sleep, SetConsoleOutputCP
 #include <stdio.h>     // printf, putchar
 #include <conio.h>     // _kbhit, _getch
-#include <stdlib.h>    // malloc, free
-#include <time.h>      // 나중에 사과 랜덤 배치용 (이번 단계엔 안 씀)
+#include <stdlib.h>    // (추가) malloc, free
+#include <time.h>      // (추가) 나중에 사과 랜덤 배치용 (이번 단계엔 안 씀)
 
 #define ROWS 8
 #define COLS 18
 
-// r(행)과 c(열)를 한 덩어리로 묶는다.
+// (추가) r(행)과 c(열)를 한 덩어리로 묶는다.
 // 좌표는 항상 짝으로 다니므로, 따로 두면 헷갈리고 묶으면 "Cell 하나 = 한 좌표".
 typedef struct {
   int r;
   int c;
 } Cell;
 
-// 뱀이 최대로 길어질 수 있는 칸 수 = 보드 전체 칸 수.
+// (추가) 뱀이 최대로 길어질 수 있는 칸 수 = 보드 전체 칸 수.
 // #define은 단순 글자 치환이라 배열/malloc 크기에 그대로 쓸 수 있다.
 // 괄호로 감싸는 게 안전 — 어디서 어떻게 치환되어도 우선순위 안 꼬임.
 #define MAX_LEN (ROWS * COLS)
@@ -260,6 +243,7 @@ typedef struct {
 int main(void) {
   SetConsoleOutputCP(65001);
 
+  // (삭제) 본격 게임이 되며 인사말 제거.
   // printf("Hello, snake!\n");
 
   // 보드는 여전히 스택에 잡힌다 (컴파일 시점에 크기 고정 + 작음).
@@ -279,12 +263,13 @@ int main(void) {
     }
   }
 
+  // (삭제) Stage 3의 좌표 변수 4개. Cell + body 배열로 대체.
   // int player_r = ROWS / 2;
   // int player_c = COLS / 2;
   // int prev_r = player_r;
   // int prev_c = player_c;
 
-  // === 뱀 몸통: 힙에 동적 할당 ===
+  // (추가) === 뱀 몸통: 힙에 동적 할당 ===
   // sizeof(Cell) * MAX_LEN 바이트를 힙에서 빌려와서 그 시작 주소를 body에.
   // body는 "Cell 배열의 시작을 가리키는 쪽지"가 된다.
   Cell *body = malloc(sizeof(Cell) * MAX_LEN);
@@ -294,18 +279,19 @@ int main(void) {
   body[0].r = ROWS / 2;
   body[0].c = COLS / 2;
 
-  // 직전 꼬리 좌표 — 다음 프레임에서 이 자리를 '.'으로 지운다.
+  // (추가) 직전 꼬리 좌표 — 다음 프레임에서 이 자리를 '.'으로 지운다.
   // Stage 3의 prev_r/prev_c가 Cell 한 개로 합쳐진 것.
   Cell prev_tail = body[0];
 
-  // 종료 깃발. 'q'에서 내리고 루프 빠져나가 free까지 한 줄로 진행.
+  // (추가) 종료 깃발. 'q'에서 내리고 루프 빠져나가 free까지 한 줄로 진행.
   int running = 1;
 
+  // (수정) while(1) → while(running): 깃발 패턴으로 종료 후 free 보장.
   // while (1) {
   while (running) {
     printf("\033[H");
 
-    // === 차분 렌더링 ===
+    // (수정) === 차분 렌더링 === 인덱싱이 prev_tail.r/.c, body[0].r/.c로 바뀜.
     // board[prev_r][prev_c] = '.';
     // board[player_r][player_c] = 'O';
     board[prev_tail.r][prev_tail.c] = '.';      // 직전 꼬리 지우기
@@ -328,17 +314,19 @@ int main(void) {
         case 's': dr =  1, dc =  0; break;
         case 'a': dr =  0, dc = -1; break;
         case 'd': dr =  0, dc =  1; break;
+        // (수정) return 0 대신 깃발만 내려서 루프 빠진 뒤 free까지 한 줄로.
         // case 'q': return 0;
         case 'q': running = 0; break;   // 깃발만 내림. free는 루프 밖에서.
       }
     }
 
+    // (삭제) Stage 3의 prev 스냅샷 + 머리 한 칸 이동. 아래 큐 패턴이 대체.
     // prev_r = player_r;
     // prev_c = player_c;
     // player_r += dr;
     // player_c += dc;
 
-    // === 몸통 한 칸 전진 (큐 패턴) ===
+    // (추가) === 몸통 한 칸 전진 (큐 패턴) ===
     // 1) 다음 프레임에 지울 꼬리 좌표 저장.
     prev_tail = body[length - 1];
 
@@ -354,6 +342,7 @@ int main(void) {
     body[0].c += dc;
 
     // 벽 clamp (머리만 — 몸통은 머리 따라오니까 알아서 안에 머무름).
+    // (수정) 인덱스 player_r/c → body[0].r/c.
     // if (player_r < 1)        player_r = 1;
     // if (player_r > ROWS - 2) player_r = ROWS - 2;
     // if (player_c < 1)        player_c = 1;
@@ -363,12 +352,13 @@ int main(void) {
     if (body[0].c < 1)        body[0].c = 1;
     if (body[0].c > COLS - 2) body[0].c = COLS - 2;
 
+    // (삭제) 디버그 출력 제거.
     // printf("pos: %d, %d\n", player_r, player_c);
 
     Sleep(200);   // 약 5 FPS. FPS ≈ 1000 / Sleep_ms.
   }
 
-  // malloc 했으면 반드시 free. 안 하면 메모리 누수.
+  // (추가) malloc 했으면 반드시 free. 안 하면 메모리 누수.
   // 프로세스가 끝나면 OS가 회수해 주긴 하지만, "잡았으면 푼다" 규율이 중요.
   free(body);
 
