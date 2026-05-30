@@ -97,6 +97,13 @@ RAM에 박힘 (안 보임)     화면에 뜸 (보임)
 
 `01-snake/snake.c`를 다음으로 채운다. (Stage 0의 5줄짜리는 통째로 덮어쓴다.)
 
+**Stage 0 → Stage 1 변경점**
+- **추가**: `#define ROWS 6`, `#define COLS 18` — 보드 크기 매크로 상수.
+- **수정**: `printf("Hello, snake!");` → `printf("Hello, snake!\n");` — 끝에 줄바꿈 붙임 (다음 줄부터 보드가 깔끔하게 시작되도록).
+- **추가**: `char board[ROWS][COLS];` — 2차원 보드 배열 선언.
+- **추가**: 이중 `for` 루프 — 행/열을 돌며 테두리는 `'#'`, 안쪽은 `'.'`을 `board`에 박고 동시에 `putchar`로 출력. 안쪽 for 밖에서 `putchar('\n')`으로 줄바꿈.
+- **유지**: `#include <stdio.h>`, `int main(void)`, `return 0;` — 뼈대는 그대로.
+
 ```c
 #include <stdio.h>
 
@@ -107,6 +114,7 @@ RAM에 박힘 (안 보임)     화면에 뜸 (보임)
 #define COLS 18
 
 int main(void) {
+  // printf("Hello, snake!");
   printf("Hello, snake!\n");
 
   // 2차원 char 배열. 메모리에는 ROWS*COLS 바이트가 일렬로 잡힌다.

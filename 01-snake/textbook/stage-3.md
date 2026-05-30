@@ -167,12 +167,27 @@ while (1) {
 
 `01-snake/snake.c`를 다음으로 덮어쓴다.
 
+**Stage 2 → Stage 3 변경점**
+- **추가**: `#include <conio.h>` — Windows 논블로킹 입력 함수.
+- **수정**: `#define ROWS 6` → `8` — 자동 전진 관찰하기 좋게 보드 키움.
+- **삭제**: 첫 보드 그리기 이중 for 안의 `putchar(board[r][c])`(if/else 각 1줄)와 바깥 for의 `putchar('\n')`. 출력은 메인 루프에서 한 번에.
+- **추가**: `int dr = 0, dc = 1;` 방향 벡터, `int prev_r/prev_c` 직전 좌표(차분 렌더링용).
+- **수정**: 메인 루프의 화면 지우기 `printf("\033[2J\033[H");` → `printf("\033[H");` — 매 프레임 전체 지우기 제거(깜빡임/비효율).
+- **삭제**: 메인 루프 안에서 매 프레임 보드를 통째 재칠하던 이중 for. 대신 차분 렌더링 두 줄(`board[prev_r][prev_c]='.';` + `board[player_r][player_c]='O';`)로.
+- **삭제**: `getchar()` + 잔여 비우기 루프. 대신 `if (_kbhit()) { _getch(); ... }` 논블로킹.
+- **수정**: switch 본문 — 좌표 직접 변경(`player_r--` 등) → 방향 벡터 변경(`dr=-1, dc=0` 등). `case 'q': return 0;`만 동일.
+- **추가**: 루프 끝에 `prev_r = player_r; ... player_r += dr; ...` — 한 칸 전진 + prev 스냅샷.
+- **추가**: `printf("pos: %d, %d\n", ...);` — 디버그 출력(익숙해지면 삭제).
+- **추가**: `Sleep(200);` — 프레임 간격(약 5 FPS).
+- **유지**: clamp 블록, 도움말 `printf`, `main` 시그니처/`return 0`.
+
 ```c
 #include <windows.h>   // Sleep, SetConsoleOutputCP
 #include <stdio.h>     // printf, putchar
 #include <conio.h>     // _kbhit, _getch — Windows 전용 논블로킹 입력
 
 // 보드 크기. ROWS를 좀 키웠다 — 자동 전진을 관찰하기 좋게.
+// #define ROWS 6
 #define ROWS 8
 #define COLS 18
 
@@ -193,10 +208,13 @@ int main(void) {
     for (int c = 0; c < COLS; c++) {
       if (r == 0 || r == ROWS - 1 || c == 0 || c == COLS - 1) {
         board[r][c] = '#';
+        // putchar(board[r][c]);
       } else {
         board[r][c] = '.';
+        // putchar(board[r][c]);
       }
     }
+    // putchar('\n');
   }
 
   // 플레이어 좌표. 그리고 직전 프레임 좌표(prev_r/c) — 차분 렌더링에 필요.
@@ -207,6 +225,7 @@ int main(void) {
   int prev_c = player_c;
 
   while (1) {
+    // printf("\033[2J\033[H");
     // 매 프레임 커서만 홈 위치로. 화면은 안 지운다.
     // \033[2J(전체 지우기)는 안 씀 — 깜빡임 + 비효율.
     printf("\033[H");
@@ -216,6 +235,19 @@ int main(void) {
     // 이 두 줄이 "Dirty Rect" 그 자체.
     board[prev_r][prev_c] = '.';
     board[player_r][player_c] = 'O';
+
+    // for (int r = 0; r < ROWS; r++) {
+    //   for (int c = 0; c < COLS; c++) {
+    //     if (r == 0 || r == ROWS - 1 || c == 0 || c == COLS - 1) {
+    //       board[r][c] = '#';
+    //     } else {
+    //       board[r][c] = '.';
+    //     }
+    //     board[player_r][player_c] = 'O';
+    //     putchar(board[r][c]);
+    //   }
+    //   putchar('\n');
+    // }
 
     // 보드 전체를 한 번 출력 (커서 홈에서 시작하므로 같은 자리에 덮어쓰는 효과).
     for (int r = 0; r < ROWS; r++) {
@@ -227,14 +259,22 @@ int main(void) {
 
     printf("이동: wasd, 종료: q\n");
 
+    // int key = getchar();
+    // int c;
+    // while ((c = getchar()) != '\n' && c != EOF) {
+    // }
     // 논블로킹 입력 — 키가 눌렸을 때만(_kbhit) 읽는다(_getch).
     // getchar처럼 Enter를 기다리지 않으므로 루프가 멈추지 않는다.
     if (_kbhit()) {
       int key = _getch();
       switch (key) {
+        // case 'w': player_r--; break;
         case 'w': dr = -1, dc =  0; break;   // 위
+        // case 's': player_r++; break;
         case 's': dr =  1, dc =  0; break;   // 아래
+        // case 'a': player_c--; break;
         case 'a': dr =  0, dc = -1; break;   // 왼쪽
+        // case 'd': player_c++; break;
         case 'd': dr =  0, dc =  1; break;   // 오른쪽
         case 'q': return 0;                  // 즉시 종료
       }
