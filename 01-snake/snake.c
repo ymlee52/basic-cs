@@ -50,6 +50,8 @@ int main(void) {
   apple.r = 1 + rand() % (ROWS - 2);
   apple.c = 1 + rand() % (COLS - 2);
 
+  int ate = 0;
+
   int running = 1;
   
   printf("\033[?1049h"); // 대체 화면 진입
@@ -59,7 +61,11 @@ int main(void) {
     printf("\033[H");
 
     // 차분 렌더링
-    board[prev_tail.r][prev_tail.c] = '.';
+    if (!ate) {
+      board[prev_tail.r][prev_tail.c] = '.';
+    }
+    ate = 0;
+
     // 사과 먼저 박고
     board[apple.r][apple.c] = '*';
     // 그 다음 머리
@@ -101,6 +107,16 @@ int main(void) {
     if (body[0].c < 1)        body[0].c = 1;
     if (body[0].c > COLS - 2) body[0].c = COLS - 2;
     
+    if (body[0].r == apple.r && body[0].c == apple.c) {
+      length++;
+      body[length - 1] = prev_tail;
+
+      apple.r = 1 + rand() % (ROWS - 2);
+      apple.c = 1 + rand() % (COLS - 2);
+
+      ate = 1;
+    }
+
     // 200ms, 5 FPS
     Sleep(200);
   }
